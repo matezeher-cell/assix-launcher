@@ -1,0 +1,66 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+<title>ASSIX barra</title>
+<link rel="apple-touch-icon" href="icono%20assix%20final.png">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="ASSIX barra">
+<meta name="theme-color" content="#000000">
+<style>
+  html, body { margin: 0; padding: 0; height: 100%; overflow: hidden; background: #000000; }
+  /* con "black-translucent" la barra de estado es transparente y deja ver el fondo de esta pagina: ese fondo ES el color de la barra */
+  iframe { position: fixed; left: 0; right: 0; bottom: 0; top: env(safe-area-inset-top); width: 100%; height: calc(100% - env(safe-area-inset-top)); border: none; }
+  #sim { position: fixed; left: 0; right: 0; top: env(safe-area-inset-top); bottom: 0; display: none; flex-direction: column; gap: 16px; align-items: center; justify-content: center; font: 16px -apple-system, sans-serif; color: #888; text-align: center; padding: 24px; }
+  #sim button { font: 600 20px -apple-system, sans-serif; width: 80%; max-width: 360px; padding: 22px; border-radius: 16px; border: 1px solid #888; background: #fff; color: #111; }
+</style>
+</head>
+<body>
+<div id="sim"><div id="simTxt">Prueba de la barra superior</div><button id="bClaro">Claro</button><button id="bOscuro">Oscuro</button></div>
+<script>
+/* PRUEBA de barra superior (iPad/celular) con el color de la app. NO reemplaza al index.html del lanzador.
+   Uso: https://matezeher-cell.github.io/assix-launcher/barra-test.html
+     ?sim=1          sin la app: dos botones Claro / Oscuro para ver como queda la barra
+     (sin nada)      muestra la app de /dev (la que avisa su modo con postMessage)
+     ?app=prod       muestra la app de produccion (todavia no avisa su modo)
+     ?estilo=default|black|black-translucent   cambia el estilo de la barra (por defecto black-translucent); puede hacer falta borrar el icono y volver a agregarlo */
+(function () {
+  var COL = { light: '#F4F4F4', dark: '#000000' };
+  var q = new URLSearchParams(location.search);
+  var estilo = q.get('estilo');
+  if (estilo === 'default' || estilo === 'black' || estilo === 'black-translucent') {
+    var mm = document.querySelector('meta[name="apple-mobile-web-app-status-bar-style"]'); if (mm) mm.setAttribute('content', estilo);
+  }
+  function aplicar(m) {
+    if (m !== 'light' && m !== 'dark') return;
+    document.documentElement.style.background = COL[m];
+    document.body.style.background = COL[m];
+    var t = document.querySelector('meta[name="theme-color"]'); if (t) t.setAttribute('content', COL[m]);
+    try { localStorage.setItem('assix_barra_modo', m); } catch (e) {}
+    var s = document.getElementById('simTxt'); if (s) s.textContent = 'Modo: ' + (m === 'light' ? 'claro' : 'oscuro');
+  }
+  /* color inicial = el ultimo modo que aviso la app (si no hay ninguno, negro como hoy) */
+  var ult = ''; try { ult = localStorage.getItem('assix_barra_modo') || ''; } catch (e) {}
+  aplicar(ult === 'light' ? 'light' : 'dark');
+  window.addEventListener('message', function (ev) {
+    var o = String(ev.origin || '');
+    if (!(o === 'https://script.google.com' || /^https:\/\/[a-z0-9\-]+\.googleusercontent\.com$/.test(o))) return;
+    var d = ev.data; if (d && typeof d === 'object' && typeof d.assixTema === 'string') aplicar(d.assixTema);
+  });
+  if (q.get('sim') === '1') {
+    document.getElementById('sim').style.display = 'flex';
+    document.getElementById('bClaro').onclick = function () { aplicar('light'); };
+    document.getElementById('bOscuro').onclick = function () { aplicar('dark'); };
+  } else {
+    var f = document.createElement('iframe');
+    f.src = q.get('app') === 'prod'
+      ? 'https://script.google.com/macros/s/AKfycbw0PwVt9yT96PGSasYHaOzBGlXri0Mk1q5KI4UTmxaS7wu_KjpOGCBuF9ipqreJFm-i/exec'
+      : 'https://script.google.com/macros/s/AKfycbxH8Q0IjRbNI7XDkRa3jHi6owFjsJ5JJ-l32wNsr8A/dev';
+    document.body.appendChild(f);
+  }
+})();
+</script>
+</body>
+</html>
